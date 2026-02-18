@@ -26,6 +26,11 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: ☕ Setup Java
         uses: actions/setup-java@v4
         with:
@@ -39,8 +44,9 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🔍 Verify Flutter
+      - name: 🔍 Verify Setup
         run: |
+          python --version
           flutter --version
           flutter doctor -v
 
@@ -49,9 +55,32 @@ jobs:
           rm -rf flutter_app
           flutter create --org com.complianceos --project-name compliance_os flutter_app
 
-      - name: 📦 Create pubspec.yaml
+      - name: 📁 Create Directory Structure
         run: |
-          cat > flutter_app/pubspec.yaml << 'ENDOFPUBSPEC'
+          mkdir -p flutter_app/lib/config
+          mkdir -p flutter_app/lib/models
+          mkdir -p flutter_app/lib/services
+          mkdir -p flutter_app/lib/providers
+          mkdir -p flutter_app/lib/screens
+          mkdir -p flutter_app/lib/widgets
+          mkdir -p flutter_app/assets/images
+          touch flutter_app/assets/images/.gitkeep
+
+      - name: 📦 Create All Flutter Files
+        run: |
+          python << 'PYTHON_SCRIPT'
+          import os
+
+          def write_file(path, content):
+              os.makedirs(os.path.dirname(path), exist_ok=True)
+              with open(path, 'w') as f:
+                  f.write(content.strip() + '\n')
+              print(f"✅ Created: {path}")
+
+          # ============================================
+          # pubspec.yaml
+          # ============================================
+          write_file('flutter_app/pubspec.yaml', '''
           name: compliance_os
           description: ComplianceOS - Premium Task Management
           publish_to: 'none'
@@ -75,11 +104,9 @@ jobs:
             shimmer: ^3.0.0
             intl: ^0.19.0
             flutter_animate: ^4.5.0
-            glassmorphism: ^3.0.0
             cached_network_image: ^3.3.1
             path_provider: ^2.1.2
             url_launcher: ^6.2.5
-            permission_handler: ^11.3.0
 
           dev_dependencies:
             flutter_test:
@@ -90,30 +117,12 @@ jobs:
             uses-material-design: true
             assets:
               - assets/images/
-          ENDOFPUBSPEC
-          
-          # Fix indentation
-          sed -i 's/^          //' flutter_app/pubspec.yaml
+          ''')
 
-      - name: 🎨 Create Assets
-        run: |
-          mkdir -p flutter_app/assets/images
-          # Create placeholder
-          echo "" > flutter_app/assets/images/.gitkeep
-
-      - name: 📁 Create Directory Structure
-        run: |
-          mkdir -p flutter_app/lib/config
-          mkdir -p flutter_app/lib/models
-          mkdir -p flutter_app/lib/services
-          mkdir -p flutter_app/lib/providers
-          mkdir -p flutter_app/lib/screens
-          mkdir -p flutter_app/lib/widgets
-
-      - name: ⚙️ Create Config Files
-        run: |
-          # Constants
-          cat > flutter_app/lib/config/constants.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/config/constants.dart
+          # ============================================
+          write_file('flutter_app/lib/config/constants.dart', '''
           class AppConstants {
             static const String backendBaseUrl = "https://lease-moore-others-montreal.trycloudflare.com/.netlify/functions";
             static const String timezone = "Asia/Kolkata";
@@ -139,12 +148,12 @@ jobs:
             
             static const List<String> priorities = ['HIGH', 'MEDIUM', 'LOW'];
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/config/constants.dart
+          ''')
 
-      - name: 🎨 Create Premium Theme
-        run: |
-          cat > flutter_app/lib/config/theme.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/config/theme.dart
+          # ============================================
+          write_file('flutter_app/lib/config/theme.dart', '''
           import 'package:flutter/material.dart';
           import 'package:google_fonts/google_fonts.dart';
 
@@ -161,20 +170,12 @@ jobs:
             static const Color teal = Color(0xFF5AC8FA);
             static const Color orange = Color(0xFFFF9500);
             
-            // Gradient
             static const LinearGradient primaryGradient = LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [Color(0xFF0A84FF), Color(0xFF5AC8FA), Color(0xFF64D2FF)],
             );
-            
-            static const LinearGradient darkGradient = LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF1C1C1E), Color(0xFF2C2C2E)],
-            );
 
-            // Light Theme
             static ThemeData lightTheme = ThemeData(
               useMaterial3: true,
               brightness: Brightness.light,
@@ -183,18 +184,13 @@ jobs:
               colorScheme: ColorScheme.fromSeed(
                 seedColor: primary,
                 brightness: Brightness.light,
-                background: const Color(0xFFF2F2F7),
                 surface: Colors.white,
               ),
               textTheme: GoogleFonts.interTextTheme().copyWith(
                 displayLarge: GoogleFonts.inter(fontWeight: FontWeight.w900, letterSpacing: -1.5),
-                displayMedium: GoogleFonts.inter(fontWeight: FontWeight.w800, letterSpacing: -0.5),
                 headlineLarge: GoogleFonts.inter(fontWeight: FontWeight.w800),
-                headlineMedium: GoogleFonts.inter(fontWeight: FontWeight.w700),
                 titleLarge: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                titleMedium: GoogleFonts.inter(fontWeight: FontWeight.w600),
                 bodyLarge: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                bodyMedium: GoogleFonts.inter(fontWeight: FontWeight.w500),
                 labelLarge: GoogleFonts.inter(fontWeight: FontWeight.w700),
               ),
               appBarTheme: AppBarTheme(
@@ -281,7 +277,6 @@ jobs:
               dividerTheme: const DividerThemeData(color: Color(0xFFE5E5EA), thickness: 0.5),
             );
 
-            // Dark Theme
             static ThemeData darkTheme = ThemeData(
               useMaterial3: true,
               brightness: Brightness.dark,
@@ -290,18 +285,13 @@ jobs:
               colorScheme: ColorScheme.fromSeed(
                 seedColor: primary,
                 brightness: Brightness.dark,
-                background: const Color(0xFF000000),
                 surface: const Color(0xFF1C1C1E),
               ),
               textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
                 displayLarge: GoogleFonts.inter(fontWeight: FontWeight.w900, letterSpacing: -1.5, color: Colors.white),
-                displayMedium: GoogleFonts.inter(fontWeight: FontWeight.w800, letterSpacing: -0.5, color: Colors.white),
                 headlineLarge: GoogleFonts.inter(fontWeight: FontWeight.w800, color: Colors.white),
-                headlineMedium: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
                 titleLarge: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
-                titleMedium: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
                 bodyLarge: GoogleFonts.inter(fontWeight: FontWeight.w500, color: Colors.white),
-                bodyMedium: GoogleFonts.inter(fontWeight: FontWeight.w500, color: Colors.white),
                 labelLarge: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
               ),
               appBarTheme: AppBarTheme(
@@ -404,13 +394,12 @@ jobs:
               'LOW': const Color(0xFF34C759),
             };
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/config/theme.dart
+          ''')
 
-      - name: 📊 Create Models
-        run: |
-          # User Model
-          cat > flutter_app/lib/models/user_model.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/models/user_model.dart
+          # ============================================
+          write_file('flutter_app/lib/models/user_model.dart', '''
           class UserModel {
             final String uid;
             final String email;
@@ -449,11 +438,12 @@ jobs:
               );
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/models/user_model.dart
+          ''')
 
-          # Task Model
-          cat > flutter_app/lib/models/task_model.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/models/task_model.dart
+          # ============================================
+          write_file('flutter_app/lib/models/task_model.dart', '''
           class TaskModel {
             final String id;
             final String? clientId;
@@ -497,7 +487,7 @@ jobs:
 
             String get normalizedCategory {
               final u = (category ?? '').toUpperCase().replaceAll(' ', '_');
-              if (u == 'INCOME_TAX' || u == 'INCOME_TAX_RETURN' || u == 'INCOME') return 'INCOME_TAX';
+              if (u == 'INCOME_TAX' || u == 'INCOME_TAX_RETURN') return 'INCOME_TAX';
               if (['GST', 'TDS', 'ROC', 'ACCOUNTING', 'AUDIT'].contains(u)) return u;
               return 'OTHER';
             }
@@ -524,11 +514,12 @@ jobs:
               );
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/models/task_model.dart
+          ''')
 
-          # Client Model
-          cat > flutter_app/lib/models/client_model.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/models/client_model.dart
+          # ============================================
+          write_file('flutter_app/lib/models/client_model.dart', '''
           class ClientModel {
             final String id;
             final String name;
@@ -554,12 +545,56 @@ jobs:
               );
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/models/client_model.dart
+          ''')
 
-      - name: 🌐 Create API Service
-        run: |
-          cat > flutter_app/lib/services/api_service.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/utils/date_utils.dart
+          # ============================================
+          write_file('flutter_app/lib/utils/date_utils.dart', '''
+          import 'package:intl/intl.dart';
+
+          class AppDateUtils {
+            static String todayYmd() {
+              return DateFormat('yyyy-MM-dd').format(DateTime.now());
+            }
+
+            static String ymdToDmy(String? ymd) {
+              if (ymd == null || ymd.isEmpty) return '';
+              try {
+                final date = DateTime.parse(ymd);
+                return DateFormat('dd-MM-yyyy').format(date);
+              } catch (_) {
+                return '';
+              }
+            }
+
+            static String dmyToYmd(String dmy) {
+              final pattern = RegExp(r'^(\\d{2})-(\\d{2})-(\\d{4})$');
+              final match = pattern.firstMatch(dmy.trim());
+              if (match == null) throw FormatException('Invalid date');
+              return '\${match.group(3)}-\${match.group(2)}-\${match.group(1)}';
+            }
+
+            static int diffDays(String fromYmd, String toYmd) {
+              try {
+                final from = DateTime.parse(fromYmd);
+                final to = DateTime.parse(toYmd);
+                return to.difference(from).inDays;
+              } catch (_) {
+                return 0;
+              }
+            }
+
+            static String formatDateTime(DateTime dt) {
+              return DateFormat('dd MMM yyyy, HH:mm').format(dt);
+            }
+          }
+          ''')
+
+          # ============================================
+          # lib/services/api_service.dart
+          # ============================================
+          write_file('flutter_app/lib/services/api_service.dart', '''
           import 'dart:convert';
           import 'package:http/http.dart' as http;
           import 'package:firebase_auth/firebase_auth.dart';
@@ -595,10 +630,10 @@ jobs:
                 }
 
                 final response = await http.post(
-                  Uri.parse('$_baseUrl$endpoint'),
+                  Uri.parse('\$_baseUrl\$endpoint'),
                   headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer $token',
+                    'Authorization': 'Bearer \$token',
                   },
                   body: jsonEncode(body),
                 );
@@ -654,13 +689,12 @@ jobs:
               });
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/services/api_service.dart
+          ''')
 
-      - name: 🔄 Create Providers
-        run: |
-          # Auth Provider
-          cat > flutter_app/lib/providers/auth_provider.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/providers/auth_provider.dart
+          # ============================================
+          write_file('flutter_app/lib/providers/auth_provider.dart', '''
           import 'package:flutter/material.dart';
           import 'package:firebase_auth/firebase_auth.dart';
           import 'package:cloud_firestore/cloud_firestore.dart';
@@ -800,11 +834,12 @@ jobs:
               notifyListeners();
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/providers/auth_provider.dart
+          ''')
 
-          # App Provider
-          cat > flutter_app/lib/providers/app_provider.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/providers/app_provider.dart
+          # ============================================
+          write_file('flutter_app/lib/providers/app_provider.dart', '''
           import 'package:flutter/material.dart';
           import 'package:cloud_firestore/cloud_firestore.dart';
           import 'package:firebase_auth/firebase_auth.dart';
@@ -869,57 +904,12 @@ jobs:
               return _clientsById[clientId]?.name;
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/providers/app_provider.dart
+          ''')
 
-      - name: 🛠️ Create Utils
-        run: |
-          cat > flutter_app/lib/utils/date_utils.dart << 'ENDOFFILE'
-          import 'package:intl/intl.dart';
-
-          class AppDateUtils {
-            static String todayYmd() {
-              return DateFormat('yyyy-MM-dd').format(DateTime.now());
-            }
-
-            static String ymdToDmy(String? ymd) {
-              if (ymd == null || ymd.isEmpty) return '';
-              try {
-                final date = DateTime.parse(ymd);
-                return DateFormat('dd-MM-yyyy').format(date);
-              } catch (_) {
-                return '';
-              }
-            }
-
-            static String dmyToYmd(String dmy) {
-              final pattern = RegExp(r'^(\d{2})-(\d{2})-(\d{4})$');
-              final match = pattern.firstMatch(dmy.trim());
-              if (match == null) throw FormatException('Invalid date');
-              return '${match.group(3)}-${match.group(2)}-${match.group(1)}';
-            }
-
-            static int diffDays(String fromYmd, String toYmd) {
-              try {
-                final from = DateTime.parse(fromYmd);
-                final to = DateTime.parse(toYmd);
-                return to.difference(from).inDays;
-              } catch (_) {
-                return 0;
-              }
-            }
-
-            static String formatDateTime(DateTime dt) {
-              return DateFormat('dd MMM yyyy, HH:mm').format(dt);
-            }
-          }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/utils/date_utils.dart
-
-      - name: 🧩 Create Premium Widgets
-        run: |
-          # Glass Card Widget
-          cat > flutter_app/lib/widgets/glass_card.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/widgets/glass_card.dart
+          # ============================================
+          write_file('flutter_app/lib/widgets/glass_card.dart', '''
           import 'dart:ui';
           import 'package:flutter/material.dart';
           import 'package:google_fonts/google_fonts.dart';
@@ -1052,11 +1042,12 @@ jobs:
               );
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/widgets/glass_card.dart
+          ''')
 
-          # Status Pill Widget
-          cat > flutter_app/lib/widgets/status_pill.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/widgets/status_pill.dart
+          # ============================================
+          write_file('flutter_app/lib/widgets/status_pill.dart', '''
           import 'package:flutter/material.dart';
           import 'package:google_fonts/google_fonts.dart';
           import '../config/theme.dart';
@@ -1145,11 +1136,12 @@ jobs:
               );
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/widgets/status_pill.dart
+          ''')
 
-          # Category Pill
-          cat > flutter_app/lib/widgets/category_pill.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/widgets/category_pill.dart
+          # ============================================
+          write_file('flutter_app/lib/widgets/category_pill.dart', '''
           import 'package:flutter/material.dart';
           import 'package:google_fonts/google_fonts.dart';
           import '../config/theme.dart';
@@ -1187,11 +1179,12 @@ jobs:
               );
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/widgets/category_pill.dart
+          ''')
 
-          # KPI Card
-          cat > flutter_app/lib/widgets/kpi_card.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/widgets/kpi_card.dart
+          # ============================================
+          write_file('flutter_app/lib/widgets/kpi_card.dart', '''
           import 'package:flutter/material.dart';
           import 'package:google_fonts/google_fonts.dart';
           import '../config/theme.dart';
@@ -1271,12 +1264,26 @@ jobs:
               );
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/widgets/kpi_card.dart
+          ''')
 
-      - name: 📱 Create Auth Screen
+          print("\\n✅ All widget files created!")
+          PYTHON_SCRIPT
+
+      - name: 📱 Create Screen Files
         run: |
-          cat > flutter_app/lib/screens/auth_screen.dart << 'ENDOFFILE'
+          python << 'PYTHON_SCRIPT'
+          import os
+
+          def write_file(path, content):
+              os.makedirs(os.path.dirname(path), exist_ok=True)
+              with open(path, 'w') as f:
+                  f.write(content.strip() + '\n')
+              print(f"✅ Created: {path}")
+
+          # ============================================
+          # lib/screens/auth_screen.dart
+          # ============================================
+          write_file('flutter_app/lib/screens/auth_screen.dart', '''
           import 'dart:ui';
           import 'package:flutter/material.dart';
           import 'package:flutter_animate/flutter_animate.dart';
@@ -1361,7 +1368,6 @@ jobs:
               return Scaffold(
                 body: Stack(
                   children: [
-                    // Animated Background
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -1373,7 +1379,6 @@ jobs:
                         ),
                       ),
                     ),
-                    // Decorative circles
                     Positioned(
                       top: -size.width * 0.3,
                       right: -size.width * 0.2,
@@ -1407,9 +1412,8 @@ jobs:
                           ),
                         ),
                       ),
-                    ).animate().fadeIn(duration: 1200.ms, delay: 200.ms).scale(begin: const Offset(0.8, 0.8)),
+                    ).animate().fadeIn(duration: 1200.ms, delay: 200.ms),
                     
-                    // Content
                     SafeArea(
                       child: Center(
                         child: SingleChildScrollView(
@@ -1419,7 +1423,6 @@ jobs:
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                // Logo
                                 Container(
                                   width: 80,
                                   height: 80,
@@ -1434,35 +1437,21 @@ jobs:
                                       ),
                                     ],
                                   ),
-                                  child: const Icon(
-                                    Icons.check_circle_outline_rounded,
-                                    color: Colors.white,
-                                    size: 40,
-                                  ),
+                                  child: const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 40),
                                 ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.3),
                                 const SizedBox(height: 24),
                                 
-                                // Title
                                 Text(
                                   'ComplianceOS',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: -1,
-                                  ),
+                                  style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1),
                                 ).animate().fadeIn(duration: 600.ms, delay: 100.ms),
                                 const SizedBox(height: 8),
                                 Text(
                                   'Tasks · Calendar · Compliance',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF8E8E93),
-                                  ),
+                                  style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(0xFF8E8E93)),
                                 ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
                                 const SizedBox(height: 48),
 
-                                // Glass Card
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(28),
                                   child: BackdropFilter(
@@ -1470,58 +1459,26 @@ jobs:
                                     child: Container(
                                       padding: const EdgeInsets.all(28),
                                       decoration: BoxDecoration(
-                                        color: isDark
-                                            ? Colors.white.withOpacity(0.08)
-                                            : Colors.white.withOpacity(0.8),
+                                        color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.8),
                                         borderRadius: BorderRadius.circular(28),
-                                        border: Border.all(
-                                          color: isDark
-                                              ? Colors.white.withOpacity(0.1)
-                                              : Colors.white.withOpacity(0.5),
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.1),
-                                            blurRadius: 40,
-                                            offset: const Offset(0, 20),
-                                          ),
-                                        ],
+                                        border: Border.all(color: isDark ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.5)),
+                                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 40, offset: const Offset(0, 20))],
                                       ),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            _isForgot
-                                                ? 'Reset Password'
-                                                : (_isSignUp ? 'Create Account' : 'Welcome Back'),
-                                            style: GoogleFonts.inter(
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.w800,
-                                            ),
+                                            _isForgot ? 'Reset Password' : (_isSignUp ? 'Create Account' : 'Welcome Back'),
+                                            style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w800),
                                           ),
                                           const SizedBox(height: 8),
                                           Text(
-                                            _isForgot
-                                                ? 'Enter your email to receive a reset link'
-                                                : (_isSignUp
-                                                    ? 'Start managing compliance today'
-                                                    : 'Sign in to continue'),
-                                            style: GoogleFonts.inter(
-                                              fontSize: 14,
-                                              color: const Color(0xFF8E8E93),
-                                            ),
+                                            _isForgot ? 'Enter your email to receive a reset link' : (_isSignUp ? 'Start managing compliance today' : 'Sign in to continue'),
+                                            style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF8E8E93)),
                                           ),
                                           const SizedBox(height: 28),
 
-                                          // Email
-                                          Text(
-                                            'Email',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
-                                              color: isDark ? Colors.white70 : Colors.black54,
-                                            ),
-                                          ),
+                                          Text('Email', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.white70 : Colors.black54)),
                                           const SizedBox(height: 8),
                                           TextField(
                                             controller: _emailController,
@@ -1530,23 +1487,13 @@ jobs:
                                               hintText: 'your@email.com',
                                               prefixIcon: const Icon(Icons.email_outlined, size: 20),
                                               filled: true,
-                                              fillColor: isDark
-                                                  ? Colors.white.withOpacity(0.05)
-                                                  : const Color(0xFFF2F2F7),
+                                              fillColor: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF2F2F7),
                                             ),
                                           ),
                                           const SizedBox(height: 20),
 
-                                          // Password
                                           if (!_isForgot) ...[
-                                            Text(
-                                              'Password',
-                                              style: GoogleFonts.inter(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w700,
-                                                color: isDark ? Colors.white70 : Colors.black54,
-                                              ),
-                                            ),
+                                            Text('Password', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.white70 : Colors.black54)),
                                             const SizedBox(height: 8),
                                             TextField(
                                               controller: _passwordController,
@@ -1555,26 +1502,16 @@ jobs:
                                                 hintText: '••••••••',
                                                 prefixIcon: const Icon(Icons.lock_outline, size: 20),
                                                 suffixIcon: IconButton(
-                                                  icon: Icon(
-                                                    _obscurePassword
-                                                        ? Icons.visibility_outlined
-                                                        : Icons.visibility_off_outlined,
-                                                    size: 20,
-                                                  ),
-                                                  onPressed: () {
-                                                    setState(() => _obscurePassword = !_obscurePassword);
-                                                  },
+                                                  icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 20),
+                                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                                                 ),
                                                 filled: true,
-                                                fillColor: isDark
-                                                    ? Colors.white.withOpacity(0.05)
-                                                    : const Color(0xFFF2F2F7),
+                                                fillColor: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF2F2F7),
                                               ),
                                             ),
                                             const SizedBox(height: 28),
                                           ],
 
-                                          // Submit Button
                                           SizedBox(
                                             width: double.infinity,
                                             height: 54,
@@ -1582,33 +1519,18 @@ jobs:
                                               onPressed: auth.isLoading ? null : _handleSubmit,
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor: AppTheme.primary,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(16),
-                                                ),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                               ),
                                               child: auth.isLoading
-                                                  ? const SizedBox(
-                                                      width: 24,
-                                                      height: 24,
-                                                      child: CircularProgressIndicator(
-                                                        strokeWidth: 2.5,
-                                                        color: Colors.white,
-                                                      ),
-                                                    )
+                                                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
                                                   : Text(
-                                                      _isForgot
-                                                          ? 'Send Reset Link'
-                                                          : (_isSignUp ? 'Create Account' : 'Sign In'),
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: 16,
-                                                        fontWeight: FontWeight.w700,
-                                                      ),
+                                                      _isForgot ? 'Send Reset Link' : (_isSignUp ? 'Create Account' : 'Sign In'),
+                                                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
                                                     ),
                                             ),
                                           ),
                                           const SizedBox(height: 20),
 
-                                          // Toggle buttons
                                           Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
@@ -1616,13 +1538,8 @@ jobs:
                                                 TextButton(
                                                   onPressed: () => setState(() => _isSignUp = !_isSignUp),
                                                   child: Text(
-                                                    _isSignUp
-                                                        ? 'Already have an account? Sign In'
-                                                        : "Don't have an account? Sign Up",
-                                                    style: GoogleFonts.inter(
-                                                      fontWeight: FontWeight.w600,
-                                                      color: AppTheme.primary,
-                                                    ),
+                                                    _isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up",
+                                                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.primary),
                                                   ),
                                                 ),
                                             ],
@@ -1632,10 +1549,7 @@ jobs:
                                               onPressed: () => setState(() => _isForgot = !_isForgot),
                                               child: Text(
                                                 _isForgot ? 'Back to Sign In' : 'Forgot Password?',
-                                                style: GoogleFonts.inter(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: const Color(0xFF8E8E93),
-                                                ),
+                                                style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF8E8E93)),
                                               ),
                                             ),
                                           ),
@@ -1647,11 +1561,8 @@ jobs:
                                 
                                 const SizedBox(height: 32),
                                 Text(
-                                  'Timezone: Asia/Kolkata • Date format: DD-MM-YYYY',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: const Color(0xFF8E8E93),
-                                  ),
+                                  'Timezone: Asia/Kolkata • DD-MM-YYYY',
+                                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF8E8E93)),
                                 ).animate().fadeIn(duration: 600.ms, delay: 500.ms),
                               ],
                             ),
@@ -1664,12 +1575,12 @@ jobs:
               );
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/screens/auth_screen.dart
+          ''')
 
-      - name: 📱 Create Main Shell
-        run: |
-          cat > flutter_app/lib/screens/main_shell.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/screens/main_shell.dart
+          # ============================================
+          write_file('flutter_app/lib/screens/main_shell.dart', '''
           import 'dart:ui';
           import 'package:flutter/material.dart';
           import 'package:flutter_animate/flutter_animate.dart';
@@ -1680,8 +1591,6 @@ jobs:
           import '../config/theme.dart';
           import 'home_screen.dart';
           import 'work_queue_screen.dart';
-          import 'calendar_screen.dart';
-          import 'clients_screen.dart';
           import 'settings_screen.dart';
 
           class MainShell extends StatefulWidget {
@@ -1694,11 +1603,9 @@ jobs:
           class _MainShellState extends State<MainShell> {
             int _selectedIndex = 0;
 
-            final List<_NavItem> _allNavItems = [
+            final List<_NavItem> _navItems = [
               _NavItem(icon: Icons.space_dashboard_rounded, activeIcon: Icons.space_dashboard, label: 'Home'),
               _NavItem(icon: Icons.list_alt_rounded, activeIcon: Icons.list_alt, label: 'Tasks'),
-              _NavItem(icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month, label: 'Calendar'),
-              _NavItem(icon: Icons.people_outline_rounded, activeIcon: Icons.people, label: 'Clients', partnerOnly: true),
               _NavItem(icon: Icons.settings_outlined, activeIcon: Icons.settings, label: 'Settings'),
             ];
 
@@ -1707,21 +1614,14 @@ jobs:
               final auth = context.watch<AuthProvider>();
               final isDark = Theme.of(context).brightness == Brightness.dark;
 
-              final navItems = _allNavItems.where((item) {
-                if (item.partnerOnly && !auth.isPartner) return false;
-                return true;
-              }).toList();
-
-              if (_selectedIndex >= navItems.length) _selectedIndex = 0;
-
               return Scaffold(
                 extendBody: true,
                 appBar: _buildAppBar(context, auth, isDark),
                 body: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  child: _buildBody(_selectedIndex, auth),
+                  child: _buildBody(_selectedIndex),
                 ),
-                bottomNavigationBar: _buildBottomNav(context, navItems, isDark),
+                bottomNavigationBar: _buildBottomNav(context, isDark),
                 floatingActionButton: _buildFAB(context),
               );
             }
@@ -1734,30 +1634,17 @@ jobs:
                     filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF1C1C1E).withOpacity(0.8)
-                            : Colors.white.withOpacity(0.8),
-                        border: Border(
-                          bottom: BorderSide(
-                            color: isDark
-                                ? Colors.white.withOpacity(0.1)
-                                : Colors.black.withOpacity(0.05),
-                          ),
-                        ),
+                        color: isDark ? const Color(0xFF1C1C1E).withOpacity(0.8) : Colors.white.withOpacity(0.8),
+                        border: Border(bottom: BorderSide(color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05))),
                       ),
                       child: SafeArea(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Row(
                             children: [
-                              // Logo
                               Container(
-                                width: 42,
-                                height: 42,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  gradient: AppTheme.primaryGradient,
-                                ),
+                                width: 42, height: 42,
+                                decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), gradient: AppTheme.primaryGradient),
                                 child: const Icon(Icons.check_circle_outline, color: Colors.white, size: 22),
                               ),
                               const SizedBox(width: 14),
@@ -1765,56 +1652,25 @@ jobs:
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'ComplianceOS',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  Text(
-                                    auth.user?.role ?? 'USER',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.primary,
-                                    ),
-                                  ),
+                                  Text('ComplianceOS', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800)),
+                                  Text(auth.user?.role ?? 'USER', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primary)),
                                 ],
                               ),
                               const Spacer(),
-                              // Theme Toggle
                               IconButton(
                                 onPressed: () => context.read<AppProvider>().toggleTheme(),
-                                icon: Icon(
-                                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                                  color: isDark ? Colors.white70 : Colors.black54,
-                                ),
+                                icon: Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded, color: isDark ? Colors.white70 : Colors.black54),
                               ),
-                              // Profile
                               GestureDetector(
                                 onTap: () => _showProfileSheet(context, auth),
                                 child: Container(
-                                  width: 42,
-                                  height: 42,
+                                  width: 42, height: 42,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppTheme.purple.withOpacity(0.8),
-                                        AppTheme.pink.withOpacity(0.8),
-                                      ],
-                                    ),
+                                    gradient: LinearGradient(colors: [AppTheme.purple.withOpacity(0.8), AppTheme.pink.withOpacity(0.8)]),
                                   ),
                                   child: Center(
-                                    child: Text(
-                                      (auth.user?.email ?? 'U')[0].toUpperCase(),
-                                      style: GoogleFonts.inter(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 16,
-                                      ),
-                                    ),
+                                    child: Text((auth.user?.email ?? 'U')[0].toUpperCase(), style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
                                   ),
                                 ),
                               ),
@@ -1828,47 +1684,30 @@ jobs:
               );
             }
 
-            Widget _buildBody(int index, AuthProvider auth) {
+            Widget _buildBody(int index) {
               switch (index) {
-                case 0:
-                  return const HomeScreen();
-                case 1:
-                  return const WorkQueueScreen();
-                case 2:
-                  return const CalendarScreen();
-                case 3:
-                  if (auth.isPartner) return const ClientsScreen();
-                  return const SettingsScreen();
-                case 4:
-                  return const SettingsScreen();
-                default:
-                  return const HomeScreen();
+                case 0: return const HomeScreen();
+                case 1: return const WorkQueueScreen();
+                case 2: return const SettingsScreen();
+                default: return const HomeScreen();
               }
             }
 
-            Widget _buildBottomNav(BuildContext context, List<_NavItem> items, bool isDark) {
+            Widget _buildBottomNav(BuildContext context, bool isDark) {
               return ClipRRect(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF1C1C1E).withOpacity(0.9)
-                          : Colors.white.withOpacity(0.9),
-                      border: Border(
-                        top: BorderSide(
-                          color: isDark
-                              ? Colors.white.withOpacity(0.1)
-                              : Colors.black.withOpacity(0.05),
-                        ),
-                      ),
+                      color: isDark ? const Color(0xFF1C1C1E).withOpacity(0.9) : Colors.white.withOpacity(0.9),
+                      border: Border(top: BorderSide(color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05))),
                     ),
                     child: SafeArea(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: items.asMap().entries.map((entry) {
+                          children: _navItems.asMap().entries.map((entry) {
                             final index = entry.key;
                             final item = entry.value;
                             final isSelected = index == _selectedIndex;
@@ -1880,32 +1719,15 @@ jobs:
                                   duration: const Duration(milliseconds: 200),
                                   padding: const EdgeInsets.symmetric(vertical: 8),
                                   decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? AppTheme.primary.withOpacity(0.1)
-                                        : Colors.transparent,
+                                    color: isSelected ? AppTheme.primary.withOpacity(0.1) : Colors.transparent,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(
-                                        isSelected ? item.activeIcon : item.icon,
-                                        color: isSelected
-                                            ? AppTheme.primary
-                                            : (isDark ? Colors.white54 : Colors.black45),
-                                        size: 24,
-                                      ),
+                                      Icon(isSelected ? item.activeIcon : item.icon, color: isSelected ? AppTheme.primary : (isDark ? Colors.white54 : Colors.black45), size: 24),
                                       const SizedBox(height: 4),
-                                      Text(
-                                        item.label,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 11,
-                                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                                          color: isSelected
-                                              ? AppTheme.primary
-                                              : (isDark ? Colors.white54 : Colors.black45),
-                                        ),
-                                      ),
+                                      Text(item.label, style: GoogleFonts.inter(fontSize: 11, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600, color: isSelected ? AppTheme.primary : (isDark ? Colors.white54 : Colors.black45))),
                                     ],
                                   ),
                                 ),
@@ -1922,25 +1744,10 @@ jobs:
 
             Widget _buildFAB(BuildContext context) {
               return FloatingActionButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Quick task creation coming soon!')),
-                  );
-                },
+                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Quick task coming soon!'))),
                 child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    gradient: AppTheme.primaryGradient,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primary.withOpacity(0.4),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
+                  width: 56, height: 56,
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), gradient: AppTheme.primaryGradient, boxShadow: [BoxShadow(color: AppTheme.primary.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 8))]),
                   child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
                 ),
               ).animate().scale(delay: 500.ms, duration: 300.ms);
@@ -1952,75 +1759,31 @@ jobs:
                 backgroundColor: Colors.transparent,
                 builder: (context) => Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                  ),
+                  decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
+                      Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
                       const SizedBox(height: 24),
                       Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [AppTheme.purple, AppTheme.pink],
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            (auth.user?.email ?? 'U')[0].toUpperCase(),
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 32,
-                            ),
-                          ),
-                        ),
+                        width: 80, height: 80,
+                        decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [AppTheme.purple, AppTheme.pink])),
+                        child: Center(child: Text((auth.user?.email ?? 'U')[0].toUpperCase(), style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 32))),
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        auth.user?.displayName ?? 'User',
-                        style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w800),
-                      ),
+                      Text(auth.user?.displayName ?? 'User', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w800)),
                       const SizedBox(height: 4),
-                      Text(
-                        auth.user?.email ?? '',
-                        style: GoogleFonts.inter(color: const Color(0xFF8E8E93)),
-                      ),
+                      Text(auth.user?.email ?? '', style: GoogleFonts.inter(color: const Color(0xFF8E8E93))),
                       const SizedBox(height: 8),
-                      Chip(
-                        label: Text(auth.user?.role ?? 'USER'),
-                        backgroundColor: AppTheme.primary.withOpacity(0.1),
-                        labelStyle: GoogleFonts.inter(
-                          color: AppTheme.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      Chip(label: Text(auth.user?.role ?? 'USER'), backgroundColor: AppTheme.primary.withOpacity(0.1), labelStyle: GoogleFonts.inter(color: AppTheme.primary, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 32),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            auth.signOut();
-                          },
+                          onPressed: () { Navigator.pop(context); auth.signOut(); },
                           icon: const Icon(Icons.logout_rounded),
                           label: const Text('Sign Out'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.danger,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger, padding: const EdgeInsets.symmetric(vertical: 16)),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -2035,21 +1798,14 @@ jobs:
             final IconData icon;
             final IconData activeIcon;
             final String label;
-            final bool partnerOnly;
-
-            _NavItem({
-              required this.icon,
-              required this.activeIcon,
-              required this.label,
-              this.partnerOnly = false,
-            });
+            _NavItem({required this.icon, required this.activeIcon, required this.label});
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/screens/main_shell.dart
+          ''')
 
-      - name: 📱 Create Home Screen
-        run: |
-          cat > flutter_app/lib/screens/home_screen.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/screens/home_screen.dart
+          # ============================================
+          write_file('flutter_app/lib/screens/home_screen.dart', '''
           import 'package:flutter/material.dart';
           import 'package:flutter_animate/flutter_animate.dart';
           import 'package:google_fonts/google_fonts.dart';
@@ -2076,43 +1832,24 @@ jobs:
               return StreamBuilder<List<TaskModel>>(
                 stream: app.tasksStream(isPartnerOrManager: auth.canSeeAllTasks),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return _buildLoadingState(isDark);
-                  }
+                  if (!snapshot.hasData) return _buildLoadingState(isDark);
 
                   final tasks = snapshot.data!;
                   final stats = _computeStats(tasks);
 
                   return RefreshIndicator(
-                    onRefresh: () async {
-                      await Future.delayed(const Duration(seconds: 1));
-                    },
+                    onRefresh: () async => await Future.delayed(const Duration(seconds: 1)),
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Greeting
-                          Text(
-                            _getGreeting(),
-                            style: GoogleFonts.inter(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.5,
-                            ),
-                          ).animate().fadeIn(duration: 500.ms).slideX(begin: -0.1),
+                          Text(_getGreeting(), style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5)).animate().fadeIn(duration: 500.ms).slideX(begin: -0.1),
                           const SizedBox(height: 4),
-                          Text(
-                            'Here\'s your compliance overview',
-                            style: GoogleFonts.inter(
-                              fontSize: 15,
-                              color: const Color(0xFF8E8E93),
-                            ),
-                          ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
+                          Text("Here's your compliance overview", style: GoogleFonts.inter(fontSize: 15, color: const Color(0xFF8E8E93))).animate().fadeIn(duration: 500.ms, delay: 100.ms),
                           const SizedBox(height: 28),
 
-                          // KPI Grid
                           GridView.count(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -2121,51 +1858,21 @@ jobs:
                             mainAxisSpacing: 14,
                             childAspectRatio: 1.4,
                             children: [
-                              KpiCard(
-                                label: 'Due Today',
-                                value: stats.dueToday,
-                                icon: Icons.today_rounded,
-                                color: AppTheme.danger,
-                                isAlert: true,
-                              ).animate().fadeIn(duration: 400.ms, delay: 100.ms).scale(begin: const Offset(0.9, 0.9)),
-                              KpiCard(
-                                label: 'This Week',
-                                value: stats.due7,
-                                icon: Icons.date_range_rounded,
-                                color: AppTheme.warning,
-                              ).animate().fadeIn(duration: 400.ms, delay: 150.ms).scale(begin: const Offset(0.9, 0.9)),
-                              KpiCard(
-                                label: 'Overdue',
-                                value: stats.overdue,
-                                icon: Icons.warning_rounded,
-                                color: AppTheme.pink,
-                                isAlert: true,
-                              ).animate().fadeIn(duration: 400.ms, delay: 200.ms).scale(begin: const Offset(0.9, 0.9)),
-                              KpiCard(
-                                label: 'Pending Approval',
-                                value: stats.approval,
-                                icon: Icons.pending_actions_rounded,
-                                color: AppTheme.purple,
-                              ).animate().fadeIn(duration: 400.ms, delay: 250.ms).scale(begin: const Offset(0.9, 0.9)),
+                              KpiCard(label: 'Due Today', value: stats.dueToday, icon: Icons.today_rounded, color: AppTheme.danger, isAlert: true).animate().fadeIn(duration: 400.ms, delay: 100.ms).scale(begin: const Offset(0.9, 0.9)),
+                              KpiCard(label: 'This Week', value: stats.due7, icon: Icons.date_range_rounded, color: AppTheme.warning).animate().fadeIn(duration: 400.ms, delay: 150.ms).scale(begin: const Offset(0.9, 0.9)),
+                              KpiCard(label: 'Overdue', value: stats.overdue, icon: Icons.warning_rounded, color: AppTheme.pink, isAlert: true).animate().fadeIn(duration: 400.ms, delay: 200.ms).scale(begin: const Offset(0.9, 0.9)),
+                              KpiCard(label: 'Pending Approval', value: stats.approval, icon: Icons.pending_actions_rounded, color: AppTheme.purple).animate().fadeIn(duration: 400.ms, delay: 250.ms).scale(begin: const Offset(0.9, 0.9)),
                             ],
                           ),
                           const SizedBox(height: 28),
 
-                          // Focus Tasks
                           GlassCard(
                             title: 'Focus Tasks',
                             subtitle: 'Tasks requiring immediate attention',
                             accentColor: AppTheme.primary,
                             child: stats.focusTasks.isEmpty
                                 ? _buildEmptyState(isDark)
-                                : Column(
-                                    children: stats.focusTasks.take(8).map((task) {
-                                      return _TaskRow(
-                                        task: task,
-                                        clientName: app.getClientName(task.clientId),
-                                      );
-                                    }).toList(),
-                                  ),
+                                : Column(children: stats.focusTasks.take(8).map((task) => _TaskRow(task: task, clientName: app.getClientName(task.clientId))).toList()),
                           ).animate().fadeIn(duration: 500.ms, delay: 300.ms).slideY(begin: 0.1),
                         ],
                       ),
@@ -2185,22 +1892,8 @@ jobs:
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(width: 200, height: 32, color: Colors.white),
-                      const SizedBox(height: 8),
-                      Container(width: 250, height: 16, color: Colors.white),
                       const SizedBox(height: 28),
-                      GridView.count(
-                        shrinkWrap: true,
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 14,
-                        mainAxisSpacing: 14,
-                        childAspectRatio: 1.4,
-                        children: List.generate(4, (_) => Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        )),
-                      ),
+                      GridView.count(shrinkWrap: true, crossAxisCount: 2, crossAxisSpacing: 14, mainAxisSpacing: 14, childAspectRatio: 1.4, children: List.generate(4, (_) => Container(decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20))))),
                     ],
                   ),
                 ),
@@ -2212,25 +1905,11 @@ jobs:
                 padding: const EdgeInsets.all(32),
                 child: Column(
                   children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: AppTheme.success.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.check_circle_rounded, color: AppTheme.success, size: 32),
-                    ),
+                    Container(width: 64, height: 64, decoration: BoxDecoration(color: AppTheme.success.withOpacity(0.15), shape: BoxShape.circle), child: const Icon(Icons.check_circle_rounded, color: AppTheme.success, size: 32)),
                     const SizedBox(height: 16),
-                    Text(
-                      'All caught up!',
-                      style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800),
-                    ),
+                    Text('All caught up!', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 8),
-                    Text(
-                      'No urgent tasks at the moment',
-                      style: GoogleFonts.inter(color: const Color(0xFF8E8E93)),
-                    ),
+                    Text('No urgent tasks at the moment', style: GoogleFonts.inter(color: const Color(0xFF8E8E93))),
                   ],
                 ),
               );
@@ -2274,51 +1953,24 @@ jobs:
           class _TaskRow extends StatelessWidget {
             final TaskModel task;
             final String? clientName;
-
             const _TaskRow({required this.task, this.clientName});
 
             @override
             Widget build(BuildContext context) {
               final isDark = Theme.of(context).brightness == Brightness.dark;
-
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF2F2F7),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.03),
-                  ),
-                ),
+                decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF2F2F7), borderRadius: BorderRadius.circular(16), border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.03))),
                 child: Row(
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              StatusPill.forTask(task),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  task.title,
-                                  style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
+                          Row(children: [StatusPill.forTask(task), const SizedBox(width: 8), Expanded(child: Text(task.title, style: GoogleFonts.inter(fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis))]),
                           const SizedBox(height: 8),
-                          Text(
-                            '${clientName ?? 'No client'} • ${task.dueDateYmd != null ? AppDateUtils.ymdToDmy(task.dueDateYmd!) : 'No due date'}',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: const Color(0xFF8E8E93),
-                            ),
-                          ),
+                          Text('\${clientName ?? "No client"} • \${task.dueDateYmd != null ? AppDateUtils.ymdToDmy(task.dueDateYmd!) : "No due date"}', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF8E8E93))),
                         ],
                       ),
                     ),
@@ -2328,20 +1980,18 @@ jobs:
               );
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/screens/home_screen.dart
+          ''')
 
-      - name: 📱 Create Other Screens
-        run: |
-          # Work Queue Screen
-          cat > flutter_app/lib/screens/work_queue_screen.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/screens/work_queue_screen.dart
+          # ============================================
+          write_file('flutter_app/lib/screens/work_queue_screen.dart', '''
           import 'package:flutter/material.dart';
           import 'package:google_fonts/google_fonts.dart';
           import 'package:provider/provider.dart';
           import '../providers/auth_provider.dart';
           import '../providers/app_provider.dart';
           import '../models/task_model.dart';
-          import '../widgets/glass_card.dart';
           import '../widgets/status_pill.dart';
           import '../widgets/category_pill.dart';
           import '../config/theme.dart';
@@ -2374,78 +2024,34 @@ jobs:
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Work Queue',
-                          style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900),
-                        ),
+                        Text('Work Queue', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900)),
                         const SizedBox(height: 4),
-                        Text(
-                          '${tasks.length} tasks',
-                          style: GoogleFonts.inter(fontSize: 15, color: const Color(0xFF8E8E93)),
-                        ),
+                        Text('\${tasks.length} tasks', style: GoogleFonts.inter(fontSize: 15, color: const Color(0xFF8E8E93))),
                         const SizedBox(height: 20),
 
-                        // Search
                         TextField(
                           onChanged: (v) => setState(() => _search = v),
-                          decoration: InputDecoration(
-                            hintText: 'Search tasks...',
-                            prefixIcon: const Icon(Icons.search_rounded),
-                            filled: true,
-                            fillColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
-                          ),
+                          decoration: InputDecoration(hintText: 'Search tasks...', prefixIcon: const Icon(Icons.search_rounded), filled: true, fillColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7)),
                         ),
                         const SizedBox(height: 16),
 
-                        // Filters
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
                             children: [
-                              _FilterChip(
-                                label: 'All',
-                                isSelected: _statusFilter.isEmpty,
-                                onTap: () => setState(() => _statusFilter = ''),
-                              ),
-                              _FilterChip(
-                                label: 'Pending',
-                                isSelected: _statusFilter == 'PENDING',
-                                onTap: () => setState(() => _statusFilter = 'PENDING'),
-                              ),
-                              _FilterChip(
-                                label: 'In Progress',
-                                isSelected: _statusFilter == 'IN_PROGRESS',
-                                onTap: () => setState(() => _statusFilter = 'IN_PROGRESS'),
-                              ),
-                              _FilterChip(
-                                label: 'Completed',
-                                isSelected: _statusFilter == 'COMPLETED',
-                                onTap: () => setState(() => _statusFilter = 'COMPLETED'),
-                              ),
+                              _FilterChip(label: 'All', isSelected: _statusFilter.isEmpty, onTap: () => setState(() => _statusFilter = '')),
+                              _FilterChip(label: 'Pending', isSelected: _statusFilter == 'PENDING', onTap: () => setState(() => _statusFilter = 'PENDING')),
+                              _FilterChip(label: 'In Progress', isSelected: _statusFilter == 'IN_PROGRESS', onTap: () => setState(() => _statusFilter = 'IN_PROGRESS')),
+                              _FilterChip(label: 'Completed', isSelected: _statusFilter == 'COMPLETED', onTap: () => setState(() => _statusFilter = 'COMPLETED')),
                             ],
                           ),
                         ),
                         const SizedBox(height: 20),
 
-                        // Tasks
                         if (tasks.isEmpty)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(40),
-                              child: Column(
-                                children: [
-                                  Icon(Icons.inbox_rounded, size: 64, color: const Color(0xFF8E8E93)),
-                                  const SizedBox(height: 16),
-                                  Text('No tasks found', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-                                ],
-                              ),
-                            ),
-                          )
+                          Center(child: Padding(padding: const EdgeInsets.all(40), child: Column(children: [Icon(Icons.inbox_rounded, size: 64, color: const Color(0xFF8E8E93)), const SizedBox(height: 16), Text('No tasks found', style: GoogleFonts.inter(fontWeight: FontWeight.w700))])))
                         else
-                          ...tasks.take(50).map((task) => _TaskCard(
-                                task: task,
-                                clientName: app.getClientName(task.clientId),
-                              )),
+                          ...tasks.take(50).map((task) => _TaskCard(task: task, clientName: app.getClientName(task.clientId))),
                       ],
                     ),
                   );
@@ -2457,12 +2063,11 @@ jobs:
               return tasks.where((task) {
                 if (_statusFilter.isNotEmpty && task.status != _statusFilter) return false;
                 if (_search.isNotEmpty) {
-                  final hay = '${task.title} ${app.getClientName(task.clientId) ?? ''}'.toLowerCase();
+                  final hay = '\${task.title} \${app.getClientName(task.clientId) ?? ""}'.toLowerCase();
                   if (!hay.contains(_search.toLowerCase())) return false;
                 }
                 return true;
-              }).toList()
-                ..sort((a, b) => (a.dueDateYmd ?? '').compareTo(b.dueDateYmd ?? ''));
+              }).toList()..sort((a, b) => (a.dueDateYmd ?? '').compareTo(b.dueDateYmd ?? ''));
             }
           }
 
@@ -2470,7 +2075,6 @@ jobs:
             final String label;
             final bool isSelected;
             final VoidCallback onTap;
-
             const _FilterChip({required this.label, required this.isSelected, required this.onTap});
 
             @override
@@ -2481,20 +2085,8 @@ jobs:
                   onTap: onTap,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppTheme.primary : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? AppTheme.primary : const Color(0xFF8E8E93).withOpacity(0.3),
-                      ),
-                    ),
-                    child: Text(
-                      label,
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700,
-                        color: isSelected ? Colors.white : const Color(0xFF8E8E93),
-                      ),
-                    ),
+                    decoration: BoxDecoration(color: isSelected ? AppTheme.primary : Colors.transparent, borderRadius: BorderRadius.circular(12), border: Border.all(color: isSelected ? AppTheme.primary : const Color(0xFF8E8E93).withOpacity(0.3))),
+                    child: Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: isSelected ? Colors.white : const Color(0xFF8E8E93))),
                   ),
                 ),
               );
@@ -2504,128 +2096,34 @@ jobs:
           class _TaskCard extends StatelessWidget {
             final TaskModel task;
             final String? clientName;
-
             const _TaskCard({required this.task, this.clientName});
 
             @override
             Widget build(BuildContext context) {
               final isDark = Theme.of(context).brightness == Brightness.dark;
-
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05)),
-                ),
+                decoration: BoxDecoration(color: isDark ? const Color(0xFF1C1C1E) : Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05))),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        StatusPill.forTask(task),
-                        const SizedBox(width: 8),
-                        CategoryPill(category: task.category ?? 'OTHER'),
-                        const Spacer(),
-                        Text(
-                          task.dueDateYmd != null ? AppDateUtils.ymdToDmy(task.dueDateYmd!) : '',
-                          style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF8E8E93)),
-                        ),
-                      ],
-                    ),
+                    Row(children: [StatusPill.forTask(task), const SizedBox(width: 8), CategoryPill(category: task.category ?? 'OTHER'), const Spacer(), Text(task.dueDateYmd != null ? AppDateUtils.ymdToDmy(task.dueDateYmd!) : '', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF8E8E93)))]),
                     const SizedBox(height: 12),
-                    Text(
-                      task.title,
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
-                    ),
+                    Text(task.title, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15)),
                     const SizedBox(height: 6),
-                    Text(
-                      clientName ?? 'No client',
-                      style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8E8E93)),
-                    ),
+                    Text(clientName ?? 'No client', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8E8E93))),
                   ],
                 ),
               );
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/screens/work_queue_screen.dart
+          ''')
 
-          # Calendar Screen (Stub)
-          cat > flutter_app/lib/screens/calendar_screen.dart << 'ENDOFFILE'
-          import 'package:flutter/material.dart';
-          import 'package:google_fonts/google_fonts.dart';
-          import '../widgets/glass_card.dart';
-          import '../config/theme.dart';
-
-          class CalendarScreen extends StatelessWidget {
-            const CalendarScreen({super.key});
-
-            @override
-            Widget build(BuildContext context) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Timeline', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 20),
-                    GlassCard(
-                      title: 'Calendar',
-                      subtitle: 'View tasks by date',
-                      accentColor: AppTheme.orange,
-                      child: const SizedBox(
-                        height: 300,
-                        child: Center(child: Text('Calendar view coming soon...')),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-          }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/screens/calendar_screen.dart
-
-          # Clients Screen (Stub)
-          cat > flutter_app/lib/screens/clients_screen.dart << 'ENDOFFILE'
-          import 'package:flutter/material.dart';
-          import 'package:google_fonts/google_fonts.dart';
-          import '../widgets/glass_card.dart';
-          import '../config/theme.dart';
-
-          class ClientsScreen extends StatelessWidget {
-            const ClientsScreen({super.key});
-
-            @override
-            Widget build(BuildContext context) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Clients', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 20),
-                    GlassCard(
-                      title: 'Client Management',
-                      subtitle: 'Partner only',
-                      accentColor: AppTheme.success,
-                      child: const SizedBox(
-                        height: 200,
-                        child: Center(child: Text('Client management coming soon...')),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-          }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/screens/clients_screen.dart
-
-          # Settings Screen
-          cat > flutter_app/lib/screens/settings_screen.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/screens/settings_screen.dart
+          # ============================================
+          write_file('flutter_app/lib/screens/settings_screen.dart', '''
           import 'package:flutter/material.dart';
           import 'package:google_fonts/google_fonts.dart';
           import 'package:provider/provider.dart';
@@ -2650,11 +2148,7 @@ jobs:
                     _SettingsTile(
                       icon: Icons.dark_mode_rounded,
                       title: 'Dark Mode',
-                      trailing: Switch(
-                        value: isDark,
-                        onChanged: (_) => app.toggleTheme(),
-                        activeColor: AppTheme.primary,
-                      ),
+                      trailing: Switch(value: isDark, onChanged: (_) => app.toggleTheme(), activeColor: AppTheme.primary),
                     ),
                     _SettingsTile(icon: Icons.info_outline_rounded, title: 'Version', trailing: Text('1.0.0', style: GoogleFonts.inter(color: const Color(0xFF8E8E93)))),
                   ],
@@ -2667,7 +2161,6 @@ jobs:
             final IconData icon;
             final String title;
             final Widget? trailing;
-
             const _SettingsTile({required this.icon, required this.title, this.trailing});
 
             @override
@@ -2676,27 +2169,17 @@ jobs:
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Icon(icon, color: AppTheme.primary),
-                    const SizedBox(width: 16),
-                    Expanded(child: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600))),
-                    if (trailing != null) trailing!,
-                  ],
-                ),
+                decoration: BoxDecoration(color: isDark ? const Color(0xFF1C1C1E) : Colors.white, borderRadius: BorderRadius.circular(16)),
+                child: Row(children: [Icon(icon, color: AppTheme.primary), const SizedBox(width: 16), Expanded(child: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600))), if (trailing != null) trailing!]),
               );
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/screens/settings_screen.dart
+          ''')
 
-      - name: 🚀 Create main.dart
-        run: |
-          cat > flutter_app/lib/main.dart << 'ENDOFFILE'
+          # ============================================
+          # lib/main.dart
+          # ============================================
+          write_file('flutter_app/lib/main.dart', '''
           import 'package:flutter/material.dart';
           import 'package:flutter/services.dart';
           import 'package:firebase_core/firebase_core.dart';
@@ -2722,9 +2205,7 @@ jobs:
               ),
             );
             
-            SystemChrome.setSystemUIOverlayStyle(
-              const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
-            );
+            SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(statusBarColor: Colors.transparent));
             
             runApp(const ComplianceOSApp());
           }
@@ -2749,9 +2230,7 @@ jobs:
                       themeMode: appProvider.themeMode,
                       home: Consumer<AuthProvider>(
                         builder: (context, authProvider, _) {
-                          return authProvider.isAuthenticated
-                              ? const MainShell()
-                              : const AuthScreen();
+                          return authProvider.isAuthenticated ? const MainShell() : const AuthScreen();
                         },
                       ),
                     );
@@ -2760,12 +2239,23 @@ jobs:
               );
             }
           }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/lib/main.dart
+          ''')
+
+          print("\\n✅ All screen files created!")
+          PYTHON_SCRIPT
 
       - name: ⚙️ Configure Android
         run: |
-          cat > flutter_app/android/app/build.gradle << 'ENDOFFILE'
+          python << 'PYTHON_SCRIPT'
+          import os
+
+          def write_file(path, content):
+              os.makedirs(os.path.dirname(path), exist_ok=True)
+              with open(path, 'w') as f:
+                  f.write(content.strip() + '\n')
+              print(f"✅ Created: {path}")
+
+          write_file('flutter_app/android/app/build.gradle', '''
           plugins {
               id "com.android.application"
               id "kotlin-android"
@@ -2815,10 +2305,9 @@ jobs:
 
           flutter { source '../..' }
           dependencies { implementation 'androidx.multidex:multidex:2.0.1' }
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/android/app/build.gradle
+          ''')
 
-          cat > flutter_app/android/app/src/main/AndroidManifest.xml << 'ENDOFFILE'
+          write_file('flutter_app/android/app/src/main/AndroidManifest.xml', '''
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET"/>
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
@@ -2844,11 +2333,16 @@ jobs:
                   <meta-data android:name="flutterEmbedding" android:value="2"/>
               </application>
           </manifest>
-          ENDOFFILE
-          sed -i 's/^          //' flutter_app/android/app/src/main/AndroidManifest.xml
+          ''')
 
-          echo "-keep class io.flutter.** { *; }" > flutter_app/android/app/proguard-rules.pro
-          echo "-keep class com.google.firebase.** { *; }" >> flutter_app/android/app/proguard-rules.pro
+          write_file('flutter_app/android/app/proguard-rules.pro', '''
+          -keep class io.flutter.** { *; }
+          -keep class com.google.firebase.** { *; }
+          -dontwarn com.google.firebase.**
+          ''')
+
+          print("\\n✅ Android config created!")
+          PYTHON_SCRIPT
 
       - name: 📦 Install Dependencies
         run: |
@@ -2882,3 +2376,10 @@ jobs:
           echo "## ✅ Build Complete" >> $GITHUB_STEP_SUMMARY
           echo "- **APK Size:** $(du -h ComplianceOS-release.apk | cut -f1)" >> $GITHUB_STEP_SUMMARY
           echo "- **Flutter:** $(flutter --version | head -1)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📱 Features" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Native Flutter UI (Premium Design)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Firebase Auth + Firestore" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Glass morphism effects" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Smooth animations" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Light/Dark theme" >> $GITHUB_STEP_SUMMARY
