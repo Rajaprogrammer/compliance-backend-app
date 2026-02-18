@@ -24,6 +24,13 @@ class AuthProvider extends ChangeNotifier {
   bool get isManager => _userModel?.isManager ?? false;
   bool get isAssociate => _userModel?.isAssociate ?? true;
   bool get canSeeAllTasks => _userModel?.canSeeAllTasks ?? false;
+  bool get canEditDetails => _userModel?.canEditDetails ?? false;
+  bool get canAccessClients => _userModel?.canAccessClients ?? false;
+  bool get canAccessOps => _userModel?.canAccessOps ?? false;
+  String get role => _userModel?.role ?? 'ASSOCIATE';
+  String get email => _userModel?.email ?? _firebaseUser?.email ?? '';
+  String get displayName => _userModel?.displayName ?? '';
+  String get uid => _firebaseUser?.uid ?? '';
 
   AuthProvider() {
     _auth.authStateChanges().listen(_onAuthStateChanged);
@@ -36,8 +43,18 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    await _api.initSelf();
-    await _loadUserProfile(user.uid);
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _api.initSelf();
+      await _loadUserProfile(user.uid);
+    } catch (e) {
+      debugPrint('Error initializing user: \$e');
+    }
+
+    _isLoading = false;
     notifyListeners();
   }
 
@@ -59,12 +76,20 @@ class AuthProvider extends ChangeNotifier {
         );
       }
     } catch (e) {
+      debugPrint('Error loading profile: \$e');
       _userModel = UserModel(
         uid: uid,
         email: _firebaseUser?.email ?? '',
         displayName: _firebaseUser?.email?.split('@')[0] ?? '',
         role: 'ASSOCIATE',
       );
+    }
+  }
+
+  Future<void> refreshProfile() async {
+    if (_firebaseUser != null) {
+      await _loadUserProfile(_firebaseUser!.uid);
+      notifyListeners();
     }
   }
 
@@ -134,6 +159,11 @@ class AuthProvider extends ChangeNotifier {
     await _auth.signOut();
     _firebaseUser = null;
     _userModel = null;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _error = null;
     notifyListeners();
   }
 }

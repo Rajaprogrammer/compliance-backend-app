@@ -20,6 +20,8 @@ class UserModel {
   bool get isAssociate => role.toUpperCase() == 'ASSOCIATE';
   bool get canSeeAllTasks => isPartner || isManager;
   bool get canEditDetails => isPartner || isManager;
+  bool get canAccessClients => isPartner;
+  bool get canAccessOps => isPartner || isManager;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     String normalizedRole = (json['role'] ?? 'ASSOCIATE').toString().toUpperCase().trim();
@@ -35,4 +37,13 @@ class UserModel {
       managerEmail: json['managerEmail'],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'uid': uid,
+    'email': email,
+    'displayName': displayName,
+    'role': role,
+    'active': active,
+    'managerEmail': managerEmail,
+  };
 }

@@ -4,7 +4,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/app_provider.dart';
 import '../config/theme.dart';
+import '../utils/helpers.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -33,55 +35,54 @@ class _AuthScreenState extends State<AuthScreen> {
     final password = _passwordController.text;
 
     if (email.isEmpty) {
-      _showSnackBar('Please enter your email', isError: true);
+      Helpers.showSnackBar(context, 'Please enter your email', isError: true);
       return;
     }
 
     if (_isForgot) {
       final success = await auth.resetPassword(email);
-      if (mounted && success) {
-        _showSnackBar('Password reset email sent!');
-        setState(() => _isForgot = false);
+      if (mounted) {
+        if (success) {
+          Helpers.showSnackBar(context, 'Password reset email sent!', isSuccess: true);
+          setState(() => _isForgot = false);
+        } else if (auth.error != null) {
+          Helpers.showSnackBar(context, auth.error!, isError: true);
+        }
       }
       return;
     }
 
     if (password.isEmpty || password.length < 6) {
-      _showSnackBar('Password must be at least 6 characters', isError: true);
+      Helpers.showSnackBar(context, 'Password must be at least 6 characters', isError: true);
       return;
     }
 
     bool success;
     if (_isSignUp) {
       success = await auth.signUp(email, password);
-      if (mounted && success) _showSnackBar('Account created successfully!');
+      if (mounted && success) {
+        Helpers.showSnackBar(context, 'Account created successfully!', isSuccess: true);
+      }
     } else {
       success = await auth.signIn(email, password);
     }
 
     if (mounted && !success && auth.error != null) {
-      _showSnackBar(auth.error!, isError: true);
+      Helpers.showSnackBar(context, auth.error!, isError: true);
     }
-  }
-
-  void _showSnackBar(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppTheme.danger : AppTheme.success,
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final app = context.watch<AppProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
       body: Stack(
         children: [
+          // Background gradient
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -93,6 +94,8 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
             ),
           ),
+          
+          // Decorative circles
           Positioned(
             top: -size.width * 0.3,
             right: -size.width * 0.2,
@@ -110,6 +113,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
             ),
           ).animate().fadeIn(duration: 1000.ms).scale(begin: const Offset(0.8, 0.8)),
+          
           Positioned(
             bottom: -size.width * 0.4,
             left: -size.width * 0.3,
@@ -128,6 +132,7 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ).animate().fadeIn(duration: 1200.ms, delay: 200.ms),
           
+          // Content
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -137,6 +142,21 @@ class _AuthScreenState extends State<AuthScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Theme toggle in corner
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: IconButton(
+                          onPressed: () => app.toggleTheme(),
+                          icon: Icon(
+                            isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                            color: isDark ? Colors.white70 : Colors.black54,
+                          ),
+                        ),
+                      ).animate().fadeIn(delay: 600.ms),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Logo
                       Container(
                         width: 80,
                         height: 80,
@@ -153,19 +173,25 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                         child: const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 40),
                       ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.3),
+                      
                       const SizedBox(height: 24),
                       
+                      // Title
                       Text(
                         'ComplianceOS',
                         style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1),
                       ).animate().fadeIn(duration: 600.ms, delay: 100.ms),
+                      
                       const SizedBox(height: 8),
+                      
                       Text(
                         'Tasks · Calendar · Compliance',
-                        style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(0xFF8E8E93)),
+                        style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.gray),
                       ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
+                      
                       const SizedBox(height: 48),
 
+                      // Auth Card
                       ClipRRect(
                         borderRadius: BorderRadius.circular(28),
                         child: BackdropFilter(
@@ -187,16 +213,20 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  _isForgot ? 'Enter your email to receive a reset link' : (_isSignUp ? 'Start managing compliance today' : 'Sign in to continue'),
-                                  style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF8E8E93)),
+                                  _isForgot 
+                                      ? 'Enter your email to receive a reset link' 
+                                      : (_isSignUp ? 'Start managing compliance today' : 'Sign in to continue'),
+                                  style: GoogleFonts.inter(fontSize: 14, color: AppTheme.gray),
                                 ),
                                 const SizedBox(height: 28),
 
+                                // Email field
                                 Text('Email', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.white70 : Colors.black54)),
                                 const SizedBox(height: 8),
                                 TextField(
                                   controller: _emailController,
                                   keyboardType: TextInputType.emailAddress,
+                                  textInputAction: _isForgot ? TextInputAction.done : TextInputAction.next,
                                   decoration: InputDecoration(
                                     hintText: 'your@email.com',
                                     prefixIcon: const Icon(Icons.email_outlined, size: 20),
@@ -204,14 +234,18 @@ class _AuthScreenState extends State<AuthScreen> {
                                     fillColor: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF2F2F7),
                                   ),
                                 ),
+                                
                                 const SizedBox(height: 20),
 
+                                // Password field
                                 if (!_isForgot) ...[
                                   Text('Password', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.white70 : Colors.black54)),
                                   const SizedBox(height: 8),
                                   TextField(
                                     controller: _passwordController,
                                     obscureText: _obscurePassword,
+                                    textInputAction: TextInputAction.done,
+                                    onSubmitted: (_) => _handleSubmit(),
                                     decoration: InputDecoration(
                                       hintText: '••••••••',
                                       prefixIcon: const Icon(Icons.lock_outline, size: 20),
@@ -226,6 +260,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   const SizedBox(height: 28),
                                 ],
 
+                                // Submit button
                                 SizedBox(
                                   width: double.infinity,
                                   height: 54,
@@ -243,8 +278,10 @@ class _AuthScreenState extends State<AuthScreen> {
                                           ),
                                   ),
                                 ),
+                                
                                 const SizedBox(height: 20),
 
+                                // Toggle buttons
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -258,12 +295,13 @@ class _AuthScreenState extends State<AuthScreen> {
                                       ),
                                   ],
                                 ),
+                                
                                 Center(
                                   child: TextButton(
                                     onPressed: () => setState(() => _isForgot = !_isForgot),
                                     child: Text(
                                       _isForgot ? 'Back to Sign In' : 'Forgot Password?',
-                                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF8E8E93)),
+                                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.gray),
                                     ),
                                   ),
                                 ),
@@ -274,9 +312,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       ).animate().fadeIn(duration: 700.ms, delay: 300.ms).slideY(begin: 0.2),
                       
                       const SizedBox(height: 32),
+                      
                       Text(
-                        'Timezone: Asia/Kolkata • DD-MM-YYYY',
-                        style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF8E8E93)),
+                        'Timezone: Asia/Kolkata · Date format: DD-MM-YYYY',
+                        style: GoogleFonts.inter(fontSize: 12, color: AppTheme.gray),
                       ).animate().fadeIn(duration: 600.ms, delay: 500.ms),
                     ],
                   ),
