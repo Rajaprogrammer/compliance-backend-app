@@ -366,14 +366,14 @@ jobs:
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               ),
               switchTheme: SwitchThemeData(
-                thumbColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) return primary;
-                  return Colors.white;
-                }),
-                trackColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) return primary.withOpacity(0.5);
-                  return const Color(0xFFE5E5EA);
-                }),
+                thumbColor: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) return primary;
+                return Colors.white;
+              }),
+              trackColor: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) return primary.withOpacity(0.5);
+                return const Color(0xFFE5E5EA); // (or your dark color in darkTheme)
+              }),
               ),
               tabBarTheme: TabBarTheme(
                 labelColor: primary,
@@ -478,13 +478,13 @@ jobs:
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               ),
               switchTheme: SwitchThemeData(
-                thumbColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) return primary;
+                thumbColor: MaterialStateProperty.resolveWith((states) {
+                  if (states.contains(MaterialState.selected)) return primary;
                   return Colors.white;
                 }),
-                trackColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) return primary.withOpacity(0.5);
-                  return const Color(0xFF38383A);
+                trackColor: MaterialStateProperty.resolveWith((states) {
+                  if (states.contains(MaterialState.selected)) return primary.withOpacity(0.5);
+                  return const Color(0xFFE5E5EA); // (or your dark color in darkTheme)
                 }),
               ),
               tabBarTheme: TabBarTheme(
@@ -5458,58 +5458,76 @@ jobs:
           class _EditDetailsCard extends StatefulWidget {
             final TaskModel task;
             const _EditDetailsCard({required this.task});
-          
+
             @override
             State<_EditDetailsCard> createState() => _EditDetailsCardState();
           }
-          
+
           class _EditDetailsCardState extends State<_EditDetailsCard> {
             final _api = ApiService();
             bool _busy = false;
-          
             bool _applySeries = false;
-          
-            late final TextEditingController _title = TextEditingController(text: widget.task.title);
-            late final TextEditingController _type = TextEditingController(text: widget.task.type ?? '');
+
+            late TextEditingController _title;
+            late TextEditingController _type;
+            late TextEditingController _due;
+            late TextEditingController _trigger;
+            late TextEditingController _snooze;
+            late TextEditingController _assignee;
+
             String _category = 'OTHER';
             String _priority = 'MEDIUM';
-            final _due = TextEditingController(text: AppDateUtils.ymdToDmy(widget.task.dueDateYmd));
-            final _trigger = TextEditingController(text: (widget.task.triggerDaysBefore ?? 15).toString());
-            final _snooze = TextEditingController(text: AppDateUtils.ymdToDmy(widget.task.snoozedUntilYmd));
-            final _assignee = TextEditingController(text: widget.task.assignedToEmail ?? '');
-          
+
             // start mail
             bool _sendStart = true;
-            final _to = TextEditingController(text: Helpers.joinEmails(widget.task.clientToEmails));
-            final _cc = TextEditingController(text: Helpers.joinEmails(widget.task.clientCcEmails));
-            final _bcc = TextEditingController(text: Helpers.joinEmails(widget.task.clientBccEmails));
+            late TextEditingController _to;
+            late TextEditingController _cc;
+            late TextEditingController _bcc;
             bool _ccAssigneeStart = false;
             bool _ccManagerStart = false;
-            final _startSubj = TextEditingController(text: widget.task.clientStartSubject ?? '');
-            final _startBody = TextEditingController(text: widget.task.clientStartBody ?? '');
-          
+            late TextEditingController _startSubj;
+            late TextEditingController _startBody;
+
             // completion mail
             bool _sendComp = true;
-            final _compSubj = TextEditingController(text: widget.task.clientCompletionSubject ?? '');
-            final _compBody = TextEditingController(text: widget.task.clientCompletionBody ?? '');
+            late TextEditingController _compSubj;
+            late TextEditingController _compBody;
             bool _ccAssigneeComp = false;
             bool _ccManagerComp = false;
-          
+
             @override
             void initState() {
               super.initState();
-              _category = widget.task.normalizedCategory;
-              _priority = widget.task.normalizedPriority;
-          
-              _sendStart = widget.task.sendClientStartMail;
-              _sendComp = widget.task.sendClientCompletionMail;
-          
-              _ccAssigneeStart = widget.task.ccAssigneeOnClientStart;
-              _ccManagerStart = widget.task.ccManagerOnClientStart;
-              _ccAssigneeComp = widget.task.ccAssigneeOnCompletion;
-              _ccManagerComp = widget.task.ccManagerOnCompletion;
+
+              final t = widget.task;
+
+              _title = TextEditingController(text: t.title);
+              _type = TextEditingController(text: t.type ?? '');
+
+              _category = t.normalizedCategory;
+              _priority = t.normalizedPriority;
+
+              _due = TextEditingController(text: AppDateUtils.ymdToDmy(t.dueDateYmd));
+              _trigger = TextEditingController(text: (t.triggerDaysBefore ?? 15).toString());
+              _snooze = TextEditingController(text: AppDateUtils.ymdToDmy(t.snoozedUntilYmd));
+              _assignee = TextEditingController(text: t.assignedToEmail ?? '');
+
+              _sendStart = t.sendClientStartMail;
+              _to = TextEditingController(text: Helpers.joinEmails(t.clientToEmails));
+              _cc = TextEditingController(text: Helpers.joinEmails(t.clientCcEmails));
+              _bcc = TextEditingController(text: Helpers.joinEmails(t.clientBccEmails));
+              _ccAssigneeStart = t.ccAssigneeOnClientStart;
+              _ccManagerStart = t.ccManagerOnClientStart;
+              _startSubj = TextEditingController(text: t.clientStartSubject ?? '');
+              _startBody = TextEditingController(text: t.clientStartBody ?? '');
+
+              _sendComp = t.sendClientCompletionMail;
+              _ccAssigneeComp = t.ccAssigneeOnCompletion;
+              _ccManagerComp = t.ccManagerOnCompletion;
+              _compSubj = TextEditingController(text: t.clientCompletionSubject ?? '');
+              _compBody = TextEditingController(text: t.clientCompletionBody ?? '');
             }
-          
+
             @override
             void dispose() {
               _title.dispose();
@@ -5518,19 +5536,22 @@ jobs:
               _trigger.dispose();
               _snooze.dispose();
               _assignee.dispose();
+
               _to.dispose();
               _cc.dispose();
               _bcc.dispose();
               _startSubj.dispose();
               _startBody.dispose();
+
               _compSubj.dispose();
               _compBody.dispose();
+
               super.dispose();
             }
-          
+
             Future<void> _save() async {
               setState(() => _busy = true);
-          
+
               String? dueYmd;
               if (_due.text.trim().isNotEmpty) {
                 try {
@@ -5542,7 +5563,7 @@ jobs:
                   return;
                 }
               }
-          
+
               String? snoozeYmd;
               if (_snooze.text.trim().isNotEmpty) {
                 try {
@@ -5554,7 +5575,7 @@ jobs:
                   return;
                 }
               }
-          
+
               final res = await _api.updateTask({
                 'taskId': widget.task.id,
                 'applyToSeries': _applySeries,
@@ -5566,6 +5587,7 @@ jobs:
                 'triggerDaysBefore': int.tryParse(_trigger.text.trim()) ?? 15,
                 'snoozedUntilYmd': snoozeYmd,
                 'assignedToEmail': _assignee.text.trim(),
+
                 'sendClientStartMail': _sendStart,
                 'clientToEmails': Helpers.parseEmailList(_to.text),
                 'clientCcEmails': Helpers.parseEmailList(_cc.text),
@@ -5574,27 +5596,28 @@ jobs:
                 'ccManagerOnClientStart': _ccManagerStart,
                 'clientStartSubject': _startSubj.text,
                 'clientStartBody': _startBody.text,
+
                 'sendClientCompletionMail': _sendComp,
                 'ccAssigneeOnCompletion': _ccAssigneeComp,
                 'ccManagerOnCompletion': _ccManagerComp,
                 'clientCompletionSubject': _compSubj.text,
                 'clientCompletionBody': _compBody.text,
               });
-          
+
               setState(() => _busy = false);
               if (!mounted) return;
-          
+
               if (!res.ok) {
                 Helpers.showSnackBar(context, res.error ?? 'Save failed', isError: true);
                 return;
               }
               Helpers.showSnackBar(context, 'Saved', isSuccess: true);
             }
-          
+
             @override
             Widget build(BuildContext context) {
               final hasSeries = (widget.task.seriesId ?? '').isNotEmpty;
-          
+
               return GlassCard(
                 title: 'Edit details',
                 subtitle: hasSeries ? 'Series available (apply-to-series supported)' : 'One task only',
@@ -5616,7 +5639,9 @@ jobs:
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: _category,
-                            items: AppConstants.categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                            items: AppConstants.categories
+                                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                                .toList(),
                             onChanged: _busy ? null : (v) => setState(() => _category = v ?? _category),
                             decoration: const InputDecoration(labelText: 'Category'),
                           ),
@@ -5625,7 +5650,9 @@ jobs:
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: _priority,
-                            items: AppConstants.priorities.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
+                            items: AppConstants.priorities
+                                .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                                .toList(),
                             onChanged: _busy ? null : (v) => setState(() => _priority = v ?? _priority),
                             decoration: const InputDecoration(labelText: 'Priority'),
                           ),
@@ -5651,6 +5678,7 @@ jobs:
                       ],
                     ),
                     const SizedBox(height: 16),
+
                     Align(alignment: Alignment.centerLeft, child: Text('Start email', style: GoogleFonts.inter(fontWeight: FontWeight.w900))),
                     SwitchListTile(
                       value: _sendStart,
@@ -5691,6 +5719,7 @@ jobs:
                     TextField(controller: _startSubj, decoration: const InputDecoration(labelText: 'Start subject')),
                     const SizedBox(height: 10),
                     TextField(controller: _startBody, maxLines: 5, decoration: const InputDecoration(labelText: 'Start body')),
+
                     const SizedBox(height: 16),
                     Align(alignment: Alignment.centerLeft, child: Text('Completion email', style: GoogleFonts.inter(fontWeight: FontWeight.w900))),
                     SwitchListTile(
@@ -5722,6 +5751,7 @@ jobs:
                     TextField(controller: _compSubj, decoration: const InputDecoration(labelText: 'Completion subject')),
                     const SizedBox(height: 10),
                     TextField(controller: _compBody, maxLines: 5, decoration: const InputDecoration(labelText: 'Completion body')),
+
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
