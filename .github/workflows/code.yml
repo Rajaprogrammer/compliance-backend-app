@@ -6971,39 +6971,39 @@ jobs:
           # If your original workflow already had the remaining build steps, DO NOT duplicate them.
           # Otherwise, append these steps:
           
-                - name: Install Dependencies
-                  run: |
-                    cd flutter_app
-                    flutter pub get
-          
-                - name: Build APK
-                  run: |
-                    cd flutter_app
-                    flutter build apk --release
-                    cp build/app/outputs/flutter-apk/app-release.apk ../ComplianceOS-release.apk
-                    ls -lh ../ComplianceOS-release.apk
-          
-                - name: Commit Changes
-                  run: |
-                    git config --global user.name "github-actions[bot]"
-                    git config --global user.email "github-actions[bot]@users.noreply.github.com"
-                    git add flutter_app/ ComplianceOS-release.apk || true
-                    git diff --staged --quiet || git commit -m "Build: Flutter APK $(date +'%Y-%m-%d %H:%M')"
-                    git push || true
-          
-                - name: Upload Artifact
-                  uses: actions/upload-artifact@v4
-                  with:
-                    name: ComplianceOS-APK
-                    path: ComplianceOS-release.apk
-                    retention-days: 30
-          
-                - name: Summary
-                  run: |
-                    echo "## Build Complete" >> $GITHUB_STEP_SUMMARY
-                    echo "- **APK Size:** $(du -h ComplianceOS-release.apk | cut -f1)" >> $GITHUB_STEP_SUMMARY
-                    echo "- **Flutter:** $(flutter --version | head -1)" >> $GITHUB_STEP_SUMMARY
-                    echo "" >> $GITHUB_STEP_SUMMARY
-                    echo "### Notes" >> $GITHUB_STEP_SUMMARY
-                    echo "- Theme mode is persisted via SharedPreferences (AppProvider)." >> $GITHUB_STEP_SUMMARY
-                    echo "- Ops/Clients are role-gated (Partner/Manager)." >> $GITHUB_STEP_SUMMARY
+      - name: Install Dependencies
+        run: |
+          cd flutter_app
+          flutter pub get
+
+      - name: Build APK
+        run: |
+          cd flutter_app
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk ../ComplianceOS-release.apk
+          ls -lh ../ComplianceOS-release.apk
+
+      - name: Commit Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add flutter_app/ ComplianceOS-release.apk || true
+          git diff --staged --quiet || git commit -m "Build: Flutter APK $(date +'%Y-%m-%d %H:%M')"
+          git push || true
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ComplianceOS-APK
+          path: ComplianceOS-release.apk
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          echo "## Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- **APK Size:** $(du -h ComplianceOS-release.apk | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Flutter:** $(flutter --version | head -1)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Notes" >> $GITHUB_STEP_SUMMARY
+          echo "- Theme mode is persisted via SharedPreferences (AppProvider)." >> $GITHUB_STEP_SUMMARY
+          echo "- Ops/Clients are role-gated (Partner/Manager)." >> $GITHUB_STEP_SUMMARY
